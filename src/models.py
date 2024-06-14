@@ -1,37 +1,68 @@
 import os
 import sys
-from sqlalchemy import Column, ForeignKey, Integer, String
-from sqlalchemy.orm import relationship, declarative_base
-from sqlalchemy import create_engine
-from eralchemy2 import render_er
+from sqlalchemy import Column, ForeignKey, Integer, String, Text, DateTime, Boolean, Table # type: ignore
+from sqlalchemy.orm import relationship, declarative_base # type: ignore
+from sqlalchemy import create_engine # type: ignore
+from eralchemy2 import render_er # type: ignore
 
 Base = declarative_base()
 
-class Person(Base):
-    __tablename__ = 'person'
-    # Here we define columns for the table person
-    # Notice that each column is also a normal Python instance attribute.
+class User(Base):
+    __tablename__ = 'users'
     id = Column(Integer, primary_key=True)
-    name = Column(String(250), nullable=False)
+    username = Column(String(50), unique=True, nullable=False)
+    email = Column(String(120), unique=True, nullable=False)
+    password = Column(String(100), nullable=False)
+    is_active = Column(Boolean, default=True)
+    posts = relationship('Post', back_populates='user')
+    comments = relationship('Comment', back_populates='user')
+    likes = relationship('Like', back_populates='user')
+    followers = relationship('Follow', back_populates='follower', foreign_keys='Follow.follower_id')
+    following = relationship('Follow', back_populates='followed', foreign_keys='Follow.followed_id')
 
-class Address(Base):
-    __tablename__ = 'address'
-    # Here we define columns for the table address.
-    # Notice that each column is also a normal Python instance attribute.
+class Post(Base):
+    __tablename__ = 'posts'
     id = Column(Integer, primary_key=True)
-    street_name = Column(String(250))
-    street_number = Column(String(250))
-    post_code = Column(String(250), nullable=False)
-    person_id = Column(Integer, ForeignKey('person.id'))
-    person = relationship(Person)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    image_url = Column(String, nullable=False)
+    caption = Column(Text)
+    created_at = Column(DateTime)
+    user = relationship('User', back_populates='posts')
+    comments = relationship('Comment', back_populates='post')
+    likes = relationship('Like', back_populates='post')
 
-    def to_dict(self):
-        return {}
+class Comment(Base):
+    __tablename__ = 'comments'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    post_id = Column(Integer, ForeignKey('posts.id'), nullable=False)
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime)
+    user = relationship('User', back_populates='comments')
+    post = relationship('Post', back_populates='comments')
 
-## Draw from SQLAlchemy base
+class Like(Base):
+    __tablename__ = 'likes'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    post_id = Column(Integer, ForeignKey('posts.id'), nullable=False)
+    created_at = Column(DateTime)
+    user = relationship('User', back_populates='likes')
+    post = relationship('Post', back_populates='likes')
+
+class Follow(Base):
+    __tablename__ = 'follows'
+    id = Column(Integer, primary_key=True)
+    follower_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    followed_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    created_at = Column(DateTime)
+    follower = relationship('User', back_populates='followers', foreign_keys=[follower_id])
+    followed = relationship('User', back_populates='following', foreign_keys=[followed_id])
+
+# Draw from SQLAlchemy base
 try:
     result = render_er(Base, 'diagram.png')
     print("Success! Check the diagram.png file")
 except Exception as e:
-    print("There was a problem genering the diagram")
+    print("There was a problem generating the diagram")
     raise e
