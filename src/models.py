@@ -1,6 +1,6 @@
 import os
 import sys
-from sqlalchemy import Column, ForeignKey, Integer, String, Text, DateTime, Boolean, Table # type: ignore
+from sqlalchemy import Column, ForeignKey, Integer, String, Text, DateTime, Boolean # type: ignore
 from sqlalchemy.orm import relationship, declarative_base # type: ignore
 from sqlalchemy import create_engine # type: ignore
 from eralchemy2 import render_er # type: ignore
@@ -19,6 +19,18 @@ class User(Base):
     likes = relationship('Like', back_populates='user')
     followers = relationship('Follow', back_populates='follower', foreign_keys='Follow.follower_id')
     following = relationship('Follow', back_populates='followed', foreign_keys='Follow.followed_id')
+    profile = relationship('Profile', uselist=False, back_populates='user')
+
+class Profile(Base):
+    __tablename__ = 'profiles'
+    id = Column(Integer, primary_key=True)
+    biography = Column(Text)
+    twitter = Column(String(250))
+    facebook = Column(String(250))
+    instagram = Column(String(250))
+    avatar = Column(String(250))
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    user = relationship('User', back_populates='profile')
 
 class Post(Base):
     __tablename__ = 'posts'
